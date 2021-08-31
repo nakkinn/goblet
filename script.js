@@ -9,7 +9,7 @@ let option=[
     ["circle","rect","line"],
 ];
 //mode ０：デフォルト　１：startを選択中　２：endを選択中　３：移動　４：領域　５：入力中　６：スライダー
-let startpin,num,endpin,pin,temx,temy,temx2,temy2,mode=0,subcanvas,boxn,boxp,time=0,sc=0.8,savelog=0;
+let startpin,num,endpin,pin,temx,temy,temx2,temy2,mode=0,subcanvas,boxn,boxp,time=0,sc=0.8,savelog=0,frame=0;
 let dx=0,dy=0,dxp,dyp,domainx,domainy;
 let textbox=document.getElementById('textbox');
 textbox.style.visibility='hidden';
@@ -29,30 +29,30 @@ function setup(){
 }
 
 function draw(){
-    subcanvas.background(255);
+    
     background(255);
-    
-    if(run){
-        for(let i=0;i<node.length;i++)  node[nodeindex[i]].dispf();
-        image(subcanvas,0,30);
-    }
-
-    push();
-    
-    translate(width/2,height/2);
-    scale(sc);
-    translate(dx,dy);
 
     if(run) for(let i=0;i<order.length;i++){
         node[order[i]].calculate();
         node[order[i]].flow();
     }
 
+    subcanvas.background(255);
+    if(run){
+        for(let i=0;i<node.length;i++)  node[nodeindex[i]].dispf();
+        image(subcanvas,0,30);
+        frame++;
+    }
+
+    push();
+    translate(width/2,height/2);
+    scale(sc);
+    translate(dx,dy);
+
     if(nodedisp){
         for(let i=0;i<node.length;i++)    node[nodeindex[i]].linedisp();
         for(let i=0;i<node.length;i++)  node[nodeindex[i]].disp();
     }
-
     
     if(mode==3){    //移動
         for(let i=0;i<snode.length;i++){
@@ -119,7 +119,10 @@ function pressleft(){
 
     let action=false;
     if(mouseY<30){
-        if(dist(mouseX,mouseY,22.5,15)<15)  run=!run;
+        if(dist(mouseX,mouseY,22.5,15)<15){
+            run=!run;
+            if(run==false)  frame=0;
+        }
         if(dist(mouseX,mouseY,82.5,15)<15)  nodedisp=!nodedisp;
         if(dist(mouseX,mouseY,142.5,15)<15)  savenode();
         if(dist(mouseX,mouseY,202.5,15)<15)  loadnode();
@@ -366,7 +369,7 @@ function interpret(s){
     if(s=='mouseY') return mouseY-30;
     if(s=='width')  return width;
     if(s=='height') return height-30;
-    if(s=='frame')  return frameCount;
+    if(s=='frame')  return frame;
     if(s=='pi') return PI;
     if(isNaN(s))    return 0;
     else    return Number(s);
@@ -637,7 +640,6 @@ class Node{
                 subcanvas.fill(tem[3][i],tem[4][i],tem[5][i],160);
                 subcanvas.circle(tem[0][i],tem[1][i],tem[2][i]*2);
             }
-            image(subcanvas,0,0);
         }
         if(this.name=="rect"){
             subcanvas.noStroke();
