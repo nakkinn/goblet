@@ -3,14 +3,13 @@ let menu;
 let option=[
     ["Add +","Subtract -","Multiply *","Divide /","Surplus %"],
     ["sin","cos","tan","絶対値","符号","切り捨て","平方根","２乗","exp","log"],
-    ["noise","constrain","distance","map"],
-    ["=",">","<",">=","<="],
+    ["power","noise","constrain","distance","map"],
+    ["And","Or","Not","=",">",">="],
     ["slider","box","array"],
     ["circle","rect","line"],
-    ["delay"]
 ];
 //mode ０：デフォルト　１：startを選択中　２：endを選択中　３：移動　４：領域　５：入力中　６：スライダー
-let startpin,num,endpin,pin,temx,temy,temx2,temy2,mode=0,subcanvas,boxn,boxp,time=0,sc=0.8;
+let startpin,num,endpin,pin,temx,temy,temx2,temy2,mode=0,subcanvas,boxn,boxp,time=0,sc=0.8,savelog=0;
 let dx=0,dy=0,dxp,dyp,domainx,domainy;
 let textbox=document.getElementById('textbox');
 textbox.style.visibility='hidden';
@@ -48,10 +47,6 @@ function draw(){
         node[order[i]].calculate();
         node[order[i]].flow();
     }
-    /*for(let i=0;i<node.length;i++){
-        node[i].calculate();
-        node[i].flow();
-    }*/
 
     if(nodedisp){
         for(let i=0;i<node.length;i++)    node[nodeindex[i]].linedisp();
@@ -63,7 +58,6 @@ function draw(){
         for(let i=0;i<snode.length;i++){
             node[ [snode[i]] ].x+=(mouseX-temx)/sc;
             node[ [snode[i]] ].y+=(mouseY-temy)/sc;
-            //node[ [snode[i]] ].select.position( (node[ [snode[i]] ].x+5)*sc+mouseX-temx-dx, (node[ [snode[i]] ].y+3)*sc+mouseY-temy-dy);
         }
         temx=mouseX;
         temy=mouseY;
@@ -85,7 +79,7 @@ function draw(){
                 break;
             }
      
-            for(let j=0;j<node[i].iy.length;j++)    if(dist(mouseX,mouseY,(node[i].x+dx)*sc+dxp,(node[i].y+node[i].iy[j]+dy)*sc+dyp)<18&&node[i].name!="box"){
+            for(let j=0;j<node[i].iy.length;j++)    if(dist(mouseX,mouseY,(node[i].x+dx)*sc+dxp,(node[i].y+node[i].iy[j]+dy)*sc+dyp)<18*sc&&node[i].type!=4){
                 if(mode==1){
                     x=(node[i].x+dx)*sc+dxp;
                     y=(node[i].y+node[i].iy[j]+dy)*sc+dyp;
@@ -106,12 +100,9 @@ function draw(){
     }
     if(menu!=undefined) menu.disp();
     fill(0),noStroke(),textSize(12);
-    //text(mode,20,20);
 
     if(mode==5) textbox.focus(); 
     if(mode==6) node[boxn].value=[int((constrain(mouseX-(node[boxn].x+dx)*sc-dxp,12*sc,120*sc)-12*sc)/1.08/sc)]; 
-    
-    //search();
    
     gui();
 }
@@ -148,7 +139,7 @@ function pressleft(){
             
             for(let j=0;j<node[ip].iy.length;j++){
                 //入力ソケット
-                if(dist(mouseX,mouseY,(node[ip].x+dx)*sc+dxp, (node[ip].y+node[ip].iy[j]+dy)*sc+dyp )<18*sc&&node[ip].name!="box"){
+                if(dist(mouseX,mouseY,(node[ip].x+dx)*sc+dxp, (node[ip].y+node[ip].iy[j]+dy)*sc+dyp )<18*sc&&node[ip].type!=4){
                     let flag=false;
                     if(node[ip].in[j]!=undefined)   flag=true;
                     cutsocket(ip,j);
@@ -164,7 +155,7 @@ function pressleft(){
                 }
                 //テキストボックス
                 if(mouseX>(node[ip].x+10+dx)*sc+dxp &&mouseX<(node[ip].x+10+78+dx)*sc+dxp &&mouseY>(node[ip].y+node[ip].iy[j]-10+dy)*sc+dyp&&
-                    mouseY<(node[ip].y+node[ip].iy[j]-10+20+dy)*sc+dyp &&node[ip].type<5&&node[ip].in[j]==undefined){
+                    mouseY<(node[ip].y+node[ip].iy[j]-10+20+dy)*sc+dyp &&node[ip].in[j]==undefined){
                     boxn=ip;
                     boxp=j;
                     if(node[ip].valueb[j]!=undefined)  textbox.value=node[ip].valueb[j];
@@ -198,7 +189,14 @@ function pressleft(){
                 num=ip;
                 temx=temx2=mouseX;
                 temy=temy2=mouseY;
-                if(snode.includes(ip)==false) snode[0]=ip;
+                if(keyIsPressed==false||keyCode!=SHIFT){
+                    if(snode.includes(ip)==false){
+                        snode[0]=ip;
+                        snode.length=1;
+                    }
+                }else{
+                    snode[snode.length]=ip;
+                }
                 let tem=nodeindex.indexOf(ip);
                 nodeindex.splice(tem,1);
                 nodeindex.push(ip);
@@ -213,6 +211,7 @@ function pressleft(){
             else    mode=4;
             domainx=mouseX;
             domainy=mouseY;
+            snode.length=0;
         }
     }
 
@@ -226,7 +225,7 @@ function pressleft(){
 }
 
 function pressright(){
-    menu=new Menu(constrain(mouseX-110,0,width-300),constrain(mouseY-10,0,height-241));
+    menu=new Menu(constrain(mouseX-110,0,width-300),constrain(mouseY-10,0,height-271));
 }
 
 
@@ -245,7 +244,7 @@ function mouseReleased(){
                 break;
             }
      
-            for(let j=0;j<node[i].iy.length;j++)    if(dist(mouseX, mouseY, (node[i].x+dx)*sc+dxp, (node[i].y+node[i].iy[j]+dy)*sc+dyp)<18*sc&&node[i].name!="box"){
+            for(let j=0;j<node[i].iy.length;j++)    if(dist(mouseX, mouseY, (node[i].x+dx)*sc+dxp, (node[i].y+node[i].iy[j]+dy)*sc+dyp)<18*sc&&node[i].type!=4){
                 cutsocket(i,j);
                 if(mode==1){
                     node[startpin].out[ node[startpin].out.length ]=i;
@@ -259,7 +258,7 @@ function mouseReleased(){
         }
     } 
     if(mode==4||mode==4.1){
-        if(mode==4) snode.length=0;
+        //if(mode==4) snode.length=0;
         for(let i=0;i<node.length;i++){
             if((node[i].x+node[i].sx+dx)*sc+dxp>min(domainx,mouseX) && (node[i].x+dx)*sc+dxp<max(domainx,mouseX) &&
             (node[i].y+node[i].sy+dy)*sc+dyp>min(domainy,mouseY) && (node[i].y+dy)*sc+dyp<max(domainy,mouseY)){
@@ -269,7 +268,7 @@ function mouseReleased(){
     }
 
     if(snode.length>0){
-        if(mouseX==temx2&&mouseY==temy2){
+        if(mouseX==temx2&&mouseY==temy2&&(keyIsPressed==false||keyCode!=SHIFT)){
             snode.length=0;
             snode[0]=num;
         }
@@ -283,16 +282,16 @@ function mouseReleased(){
 
 function mouseDragged(){
     if(mouseButton==CENTER&&nodedisp){
-        dx+=mouseX-pmouseX;
-        dy+=mouseY-pmouseY;
+        dx+=(mouseX-pmouseX)/sc;
+        dy+=(mouseY-pmouseY)/sc;
     }
 }
 
 
 function mouseWheel(event){
     if(nodedisp){
-        mode=0;
         if(mode==5) input();
+        mode=0;
         let tem=0.0005*event.deltaY;
         if(event.deltaY>0)    sc=(sc*10-1)/10;
         else sc=(sc*10+1)/10;
@@ -364,9 +363,9 @@ function cutsocket(a,b){    //a:ノード番号　b:入力番号
 
 function interpret(s){
     if(s=='mouseX') return mouseX;
-    if(s=='mouseY') return mouseY;
+    if(s=='mouseY') return mouseY-30;
     if(s=='width')  return width;
-    if(s=='height') return height;
+    if(s=='height') return height-30;
     if(s=='frame')  return frameCount;
     if(s=='pi') return PI;
     if(isNaN(s))    return 0;
@@ -452,9 +451,8 @@ function nodesort(){
             }
         }
         if(error)   break;
-        //console.log(k+' '+n);
     }
-    //console.log(nodes);
+
     let cou=0;
     for(let i=0;i<nodes.length;i++) if(nodes[i]!=-2)    cou++;
 
@@ -466,7 +464,6 @@ function nodesort(){
     if(error)   noder=[];
     order=noder.concat(start)
     console.log(order);
-    //console.log(error);
 }
 
 
@@ -488,31 +485,20 @@ class Node{
     setting(name){
         let re=true;
         if(this.name==undefined)    re=false;
-        if(this.name=="out(wave)")   this.data.length=0;
 
         this.name=name;
 
-        /*if(this.select!=undefined)  this.select.remove();
-        this.select=createSelect();
-        this.select.style('width',100*sc+'px');
-        this.select.style('height',20*sc+'px');
-        this.select.changed(()=>{this.setting(this.select.value())});
-        this.select.position((this.x+5)*sc+dx,(this.y+3)*sc+dy);
-        this.select.style('opacity',0.5);*/
         for(let i=0;i<option.length;i++){
             if(option[i].includes(name)){
-                //for(let j=0;j<option[i].length;j++) this.select.option(option[i][j]);
                 this.type=i;
             }
         }
-        
-        //this.select.value(this.name);
 
         this.sx=115;
         if(name=="value(slider")    this.iy.length=0;
-        if(name=="box"||name=="array"||this.type==1||this.type==6) this.iy.length=1;
-        if(this.type==0||this.type==3)  this.iy.length=2;
-        if(this.type==2)    this.iy.length=3;
+        if(name=="box"||name=="array"||this.name=="Not"||this.type==1||this.type==6) this.iy.length=1;
+        if(this.type==0||(this.type==3&&this.name!="Not")||this.name=="power")  this.iy.length=2;
+        if(this.name=="noise"||this.name=="constrain")    this.iy.length=3;
         if(name=="circle")  this.iy.length=6;
         if(name=="rect"||name=="line")  this.iy.length=7;
         if(name=="distance")    this.iy.length=4;
@@ -573,19 +559,19 @@ class Node{
         textSize(14);
         text(this.name,this.x+5,this.y+17);
         textAlign(RIGHT);
-        text(this.n,this.x+this.sx-15,this.y+17)
+        //text(this.n,this.x+this.sx-15,this.y+17)
         textAlign(LEFT);
         strokeWeight(1);
 
         noStroke(); //入出力ピン
         fill(100);
-        if(this.name!="box") for(let i=0;i<this.iy.length;i++){
+        if(this.type!=4) for(let i=0;i<this.iy.length;i++){
             circle(this.x,this.y+this.iy[i],15);
         }
         if(this.type!=5)   circle(this.x+this.sx,this.y+25+(this.sy-25)/2,15);
 
         for(let i=0;i<this.iy.length;i++){  //入力ボックス
-            if(this.in[i]==undefined&&this.type<5){
+            if(this.in[i]==undefined){
                 if(mode!=5||boxn!=this.n||boxp!=i){
                     fill(255),stroke(0),strokeWeight(1);           
                     rect(this.x+10,this.y+this.iy[i]-10,78,20,2);
@@ -611,23 +597,19 @@ class Node{
         if(this.name=="circle"){
             ch=['x','y','r','R','G','B'];
             fill(0),noStroke(),textSize(14);
-            for(let i=0;i<6;i++)    text(ch[i],this.x+10,this.y+this.iy[i]);
+            for(let i=0;i<6;i++)    text(ch[i],this.x+6,this.y+this.iy[i]-12);
         }
         if(this.name=="rect"){
             ch=['x','y','w','h','R','G','B'];
             fill(0),noStroke(),textSize(14);
-            for(let i=0;i<7;i++)    text(ch[i],this.x+10,this.y+this.iy[i]);
+            for(let i=0;i<7;i++)    text(ch[i],this.x+6,this.y+this.iy[i]-12);
         }
         if(this.name=="line"){
             ch=['x1','y1','x2','y2','R','G','B'];
             fill(0),noStroke(),textSize(14);
-            for(let i=0;i<7;i++)    text(ch[i],this.x+10,this.y+this.iy[i]);
+            for(let i=0;i<7;i++)    text(ch[i],this.x+6,this.y+this.iy[i]-12);
         }
 
-
-        /*fill(0),stroke(0);
-        for(let i=0;i<this.iy.length;i++)   text(this.valuei[i],this.x,this.y+this.sy+10+20*i);
-        text(this.value[0],this.x+this.sx,this.y+this.sy+10);*/
     }
 
     dispf(){
@@ -707,19 +689,12 @@ class Node{
     }
 
     calculate(){
-        if(this.type<5){
-            for(let i=0;i<this.iy.length;i++){
-                if(this.in[i]==undefined){
-                    this.valuei[i]=[interpret(this.valueb[i])];
-                }
-            }
-        }else   if(this.type>=5){
-            for(let i=0;i<this.iy.length;i++){
-                if(this.in[i]==undefined){
-                    this.valuei[i]=[0];
-                }
-            }
-        }
+
+    for(let i=0;i<this.iy.length;i++){
+        if(this.in[i]==undefined){
+            this.valuei[i]=[interpret(this.valueb[i])];
+        }   
+    }
         
         if(this.name=="box"){
             this.value[0]=interpret(this.valuei[0]);
@@ -727,12 +702,11 @@ class Node{
         if(this.name=="array"){
             this.value.length=0;
             for(let i=0;i<this.valuei[0][0];i++)    this.value[i]=i;
-            this.bit[0]=this.valuei[0][0];
         }
 
         this.error=false;
         let n=1,tem;
-        if(this.type==1||this.type==0||this.type==2||this.type==6){
+        if(this.type==1||this.type==0||this.type==2||this.type==3||this.type==6){
             tem=new Array(this.iy.length);
             for(let i=0;i<this.iy.length;i++){
                 tem[i]=[];
@@ -764,6 +738,16 @@ class Node{
         if(this.name=="Multiply *")   for(let i=0;i<n;i++)    this.value[i]=tem[0][i]*tem[1][i];
         if(this.name=="Divide /")   for(let i=0;i<n;i++)    this.value[i]=tem[0][i]/tem[1][i];
         if(this.name=="Surplus %")   for(let i=0;i<n;i++)    this.value[i]=tem[0][i]%tem[1][i];
+        if(this.name=="power")  for(let i=0;i<n;i++)    this.value[i]=pow(tem[0][i],tem[1][i]);
+
+        if(this.name=="And")   for(let i=0;i<n;i++)    if(tem[0][i]!=0&&tem[1][i]!=0)   this.value[i]=1;    else    this.value[i]=0;
+        if(this.name=="Or")   for(let i=0;i<n;i++)    if(tem[0][i]!=0||tem[1][i]!=0)   this.value[i]=1;    else    this.value[i]=0;
+        if(this.name=="Not")   for(let i=0;i<n;i++)    if(tem[0][i]==0)   this.value[i]=1;    else    this.value[i]=0;
+        if(this.name=="=")   for(let i=0;i<n;i++)    if(tem[0][i]==tem[1][i])   this.value[i]=1;    else    this.value[i]=0;
+        if(this.name==">")   for(let i=0;i<n;i++)    if(tem[0][i]>tem[1][i])   this.value[i]=1;    else    this.value[i]=0;
+        if(this.name=="<")   for(let i=0;i<n;i++)    if(tem[0][i]<tem[1][i])   this.value[i]=1;    else    this.value[i]=0;
+        if(this.name==">=")   for(let i=0;i<n;i++)    if(tem[0][i]>=tem[1][i])   this.value[i]=1;    else    this.value[i]=0;
+        if(this.name=="<=")   for(let i=0;i<n;i++)    if(tem[0][i]<=tem[1][i])   this.value[i]=1;    else    this.value[i]=0;
 
         if(this.name=="noise")  for(let i=0;i<n;i++)    this.value[i]=noise(tem[0][i],tem[1][i],tem[2][i]);
         if(this.name=="constrain")  for(let i=0;i<n;i++)    this.value[i]=constrain(tem[0][i],tem[1][i],tem[2][i]);
@@ -793,7 +777,7 @@ class Menu{
         this.sy=30;
         this.n=-1;
         this.m=-1;
-        this.group=["基本演算","演算(1pin)","演算(3pin~)","論理演算","入力","出力","特殊"];
+        this.group=["基本演算","演算A","演算B","論理演算","入力","出力"];
     }
 
     disp(){
@@ -849,11 +833,9 @@ function deletenode(n){
     }
     for(let i=0;i<node[n].iy.length;i++)    cutsocket(n,i);
 
-    //node[n].select.remove();
     node.splice(n,1);
 
     for(let i=0;i<node.length;i++){
-        //node[i].select.changed(()=>{setting(node[i].select.value)});
         if(node[i].n>n) node[i].n--;
         for(let j=0;j<node[i].iy.length;j++){
             if(node[i].in[j]>n) node[i].in[j]--;
@@ -885,7 +867,7 @@ function savenode(){
             storeItem(i+','+j+'outp',node[i].outp[j]);
         }  
     }
-    console.log("saved");
+    savelog=200;
 }
 
 function loadnode(){
@@ -918,22 +900,37 @@ function gui(){
     fill('#007acc');
     rect(0,0,width,30);
 
+    if(dist(mouseX,mouseY,22.5,15)<15){
+        fill('#209aec'),noStroke();
+        rect(2.5,0,40,30);
+    }
     fill(255);
     if(run) square(14,6,18);
     else    triangle(15,5,15,25,30,15);
 
+    if(dist(mouseX,mouseY,82.5,15)<15){
+        fill('#209aec'),noStroke();
+        rect(62.5,0,40,30);
+    }
     noFill();
     stroke(255);
     ellipse(82.5,17,20,14);
     fill(255);
     circle(82.5,17,10);
     if(nodedisp==false){
-        stroke('#007acc'),strokeWeight(3);
+        stroke('#007acc');
+        if(dist(mouseX,mouseY,82.5,15)<15)  stroke('#209aec');
+        strokeWeight(3);
         line(76,25,89,5);
         stroke(255),strokeWeight(1);
         line(76,25,89,5);
     }
 
+    if(dist(mouseX,mouseY,142.5,15)<15){
+        fill('#209aec'),noStroke();
+        rect(122.5,0,40,30);
+    }
+    stroke(255);
     strokeWeight(2);
     line(132,15,132,25);
     line(153,15,153,25);
@@ -942,6 +939,11 @@ function gui(){
     line(142.5,20,148,15);
     line(142.5,20,137,15);
 
+    if(dist(mouseX,mouseY,202.5,15)<15){
+        fill('#209aec'),noStroke();
+        rect(182.5,0,40,30);
+    }
+    stroke(255);
     line(192,15,192,25);
     line(213,15,213,25);
     line(192,25,213,25);
@@ -949,9 +951,12 @@ function gui(){
     line(202.5,5,208,10);
     line(202.5,5,197,10);
     strokeWeight(1);
+
+    if(savelog>0){
+        fill(255),noStroke();
+        text("セーブしました",300,20);
+        savelog--;
+    }
 }
-
-
-
 
 
