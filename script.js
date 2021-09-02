@@ -548,7 +548,7 @@ class Node{
         }
 
         let tem=new Array(this.iy.length);
-        if(this.type<4){
+        if(this.type<4||this.name=="box"){
 
             for(let i=0;i<this.iy.length;i++){
                 if(Array.isArray(this.valuei[i]))    tem[i]=this.valuei[i];
@@ -565,6 +565,9 @@ class Node{
             for(let i=0;i<hei;i++)  this.value[i]=[];
             
         }
+
+        if(this.name=="box")
+            for(let i=0;i<hei;i++)  for(let j=0;j<wid;j++)  this.value[i][j]=tem[0][i][j];
 
         if(this.name=="sin")    
             for(let i=0;i<hei;i++)  for(let j=0;j<wid;j++)  this.value[i][j]=sin(tem[0][i][j]);
